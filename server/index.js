@@ -23,7 +23,14 @@ mongoose
   });
 
 // 3 :Middlewares (The GateKeepers)
-app.use(cors()); // Allow Frontend to talk to the backend
+// Update CORS Configuration
+app.use(
+  cors({
+    origin: ["https://maktabat-al-noor-pk.vercel.app", "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  })
+);
 app.use(express.json()); // Allow Backend to understand JSON
 
 // 4 : Simple Test Route
