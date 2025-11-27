@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import bookRoute from "./routes/Book.Routes.js";
 import authRoute from "./routes/auth.route.js";
 import seedAdmin from "./seed.js";
+import uploadRoute from "./routes/upload.js";
 
 // 2 :Inilialize the app
 dotenv.config(); // load Enviromental vaiables
@@ -33,6 +34,7 @@ app.get("/", (req, res) => {
 // Routes
 app.use("/api/books", bookRoute);
 app.use("/api/auth", authRoute);
+app.use("/api/upload", uploadRoute);
 
 // 5 : Define PORT
 const PORT = process.env.PORT || 5000;

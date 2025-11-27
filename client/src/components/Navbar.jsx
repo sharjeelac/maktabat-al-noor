@@ -27,7 +27,7 @@ const Navbar = () => {
     <nav className="bg-white shadow-lg sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* 1. LOGO (Text hidden on mobile to save space) */}
-        <Link to="/" className="flex items-center gap-2 flex-shrink-0">
+        <Link to="/" className="flex items-center gap-2 shrink">
           <BookOpen className="text-accent w-8 h-8" />
           <span className="hidden md:block font-bold text-xl tracking-wider">
             Maktabat <span className="text-accent">Al-Noor</span>
@@ -48,7 +48,7 @@ const Navbar = () => {
         </div>
 
         {/* 3. LINKS (Hidden on mobile) */}
-        <div className="hidden md:flex items-center gap-4 flex-shrink-0">
+        <div className="hidden md:flex items-center gap-4 shrink">
           <Link to="/" className="hover:text-accent transition-colors">
             Home
           </Link>

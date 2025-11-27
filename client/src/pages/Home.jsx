@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react"; // useRef import karein
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import Hero from "../components/Hero";
-import BookCard from "../components/BookCard";
+import BookCard from "../components/BookCard.jsx";
 import { Loader2 } from "lucide-react";
 import { baseUrl } from "../url";
 
@@ -72,7 +72,7 @@ const Home = () => {
             <Loader2 className="animate-spin text-accent" />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {filteredBooks.length > 0 ? (
               filteredBooks.map((book) => (
                 <BookCard key={book._id} book={book} />

@@ -23,7 +23,7 @@ const Hero = () => {
       {/* z-10 puts text on top of the overlay */}
       <div className="relative z-10 max-w-4xl mx-auto">
         <h1 className="text-5xl md:text-7xl font-bold mb-6 tracking-tight leading-tight shadow-sm">
-          Discover the Light of <span className="text-accent">Knowledge</span>
+          Maktabat<span className="text-accent"> Al-Noor</span>
         </h1>
         <p className="text-gray-200 text-lg md:text-xl mb-10 leading-relaxed max-w-2xl mx-auto">
           Welcome to Maktabat Al-Noor. Dive into our curated collection of rare,

@@ -1,16 +1,24 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import { Trash2, Plus, Pencil, X, Image as ImageIcon } from "lucide-react";
-import { baseUrl } from "../url"; // Ensure you use your baseUrl
+import {
+  Trash2,
+  Plus,
+  Pencil,
+  X,
+  Image as ImageIcon,
+  Loader2,
+  UploadCloud,
+} from "lucide-react";
+import { baseUrl } from "../url";
 
 const Dashboard = () => {
   const [books, setBooks] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
 
-  // 1. New State for typing a gallery URL
-  const [tempGalleryUrl, setTempGalleryUrl] = useState("");
+  // State for Uploading Spinner
+  const [uploading, setUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -20,7 +28,7 @@ const Dashboard = () => {
     category: "",
     condition: "Good",
     thumbnail: "",
-    gallery: [], // Array for multiple images
+    gallery: [],
   });
   const navigate = useNavigate();
 
@@ -39,19 +47,39 @@ const Dashboard = () => {
     }
   };
 
-  // --- LOGIC TO ADD IMAGE TO LIST ---
-  const handleAddGalleryImage = (e) => {
-    e.preventDefault(); // Prevent form submit
-    if (tempGalleryUrl.trim()) {
-      setFormData({
-        ...formData,
-        gallery: [...formData.gallery, tempGalleryUrl],
+  // --- 1. NEW: HANDLE FILE UPLOAD ---
+  const uploadFileHandler = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const data = new FormData();
+    data.append("image", file); // 'image' must match backend middleware
+
+    setUploading(true); // Start spinner
+
+    try {
+      const res = await axios.post(`${baseUrl}/api/upload`, data, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      setTempGalleryUrl(""); // Clear input
+
+      // Backend returns: { url: "https://cloudinary..." }
+      const imageUrl = res.data.url;
+
+      if (type === "thumbnail") {
+        setFormData({ ...formData, thumbnail: imageUrl });
+      } else if (type === "gallery") {
+        setFormData({ ...formData, gallery: [...formData.gallery, imageUrl] });
+      }
+
+      setUploading(false); // Stop spinner
+    } catch (error) {
+      console.error(error);
+      setUploading(false);
+      alert("Image upload failed!");
     }
   };
 
-  // --- LOGIC TO REMOVE IMAGE FROM LIST ---
+  // --- REMOVE GALLERY IMAGE ---
   const handleRemoveGalleryImage = (indexToRemove) => {
     const updatedGallery = formData.gallery.filter(
       (_, index) => index !== indexToRemove
@@ -59,19 +87,11 @@ const Dashboard = () => {
     setFormData({ ...formData, gallery: updatedGallery });
   };
 
+  // --- EDIT & DELETE HANDLERS (Same as before) ---
   const handleEditClick = (book) => {
     setIsEditing(true);
     setCurrentId(book._id);
-    setFormData({
-      title: book.title,
-      author: book.author,
-      description: book.description,
-      price: book.price,
-      category: book.category,
-      condition: book.condition,
-      thumbnail: book.thumbnail,
-      gallery: book.gallery || [], // Load existing gallery
-    });
+    setFormData({ ...book, gallery: book.gallery || [] });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -88,7 +108,6 @@ const Dashboard = () => {
       thumbnail: "",
       gallery: [],
     });
-    setTempGalleryUrl("");
   };
 
   const handleSubmit = async (e) => {
@@ -102,15 +121,14 @@ const Dashboard = () => {
           headers,
         });
         alert("Book Updated!");
-        setIsEditing(false);
       } else {
         await axios.post(`${baseUrl}/api/books`, formData, { headers });
         alert("Book Added!");
       }
+      setIsEditing(false);
       fetchBooks();
-      handleCancelEdit(); // Reset form
+      handleCancelEdit();
     } catch (err) {
-      console.error(err);
       alert("Operation failed");
     }
   };
@@ -231,48 +249,72 @@ const Dashboard = () => {
               }
             />
 
-            {/* --- MAIN THUMBNAIL INPUT --- */}
+            {/* --- NEW: THUMBNAIL UPLOAD --- */}
             <div className="border-t pt-2 mt-2">
               <label className="text-xs font-bold text-gray-500 uppercase">
                 Main Thumbnail
               </label>
-              <input
-                type="text"
-                placeholder="Main Image URL"
-                className="border p-2 rounded w-full mt-1"
-                required
-                value={formData.thumbnail}
-                onChange={(e) =>
-                  setFormData({ ...formData, thumbnail: e.target.value })
-                }
-              />
+
+              {/* File Input */}
+              <div className="flex items-center gap-2 mt-1">
+                <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded flex items-center gap-2 text-sm text-gray-700 w-full justify-center border border-dashed border-gray-400">
+                  {uploading ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <UploadCloud size={16} />
+                  )}
+                  {uploading ? "Uploading..." : "Upload Cover Image"}
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => uploadFileHandler(e, "thumbnail")}
+                  />
+                </label>
+              </div>
+
+              {/* Preview Thumbnail */}
+              {formData.thumbnail && (
+                <div className="mt-2 w-full h-40 bg-gray-100 rounded overflow-hidden border relative">
+                  <img
+                    src={formData.thumbnail}
+                    alt="thumb"
+                    className="w-full h-full object-contain"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, thumbnail: "" })}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1"
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
             </div>
 
-            {/* --- GALLERY SECTION (NEW) --- */}
+            {/* --- NEW: GALLERY UPLOAD --- */}
             <div className="border-t pt-2 mt-2">
               <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
                 <ImageIcon size={14} /> Gallery Images (
                 {formData.gallery.length})
               </label>
 
-              <div className="flex gap-2 mt-2">
-                <input
-                  type="text"
-                  placeholder="Add extra image URL"
-                  className="border p-2 rounded w-full"
-                  value={tempGalleryUrl}
-                  onChange={(e) => setTempGalleryUrl(e.target.value)}
-                />
-                <button
-                  type="button" // Important: type="button" so it doesn't submit form
-                  onClick={handleAddGalleryImage}
-                  className="bg-gray-200 hover:bg-gray-300 p-2 rounded text-primary"
-                >
-                  <Plus size={20} />
-                </button>
+              <div className="mt-1">
+                <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded flex items-center gap-2 text-sm text-gray-700 w-full justify-center border border-dashed border-gray-400">
+                  {uploading ? (
+                    <Loader2 className="animate-spin" size={16} />
+                  ) : (
+                    <Plus size={16} />
+                  )}
+                  {uploading ? "Uploading..." : "Add to Gallery"}
+                  <input
+                    type="file"
+                    className="hidden"
+                    onChange={(e) => uploadFileHandler(e, "gallery")}
+                  />
+                </label>
               </div>
 
-              {/* Show added small images */}
+              {/* Preview Gallery */}
               {formData.gallery.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {formData.gallery.map((url, index) => (
@@ -299,16 +341,17 @@ const Dashboard = () => {
             </div>
 
             <button
-              className={`py-2 rounded font-bold text-white bg-black hover:bg-white hover:text-black border transition mt-4 ${
+              disabled={uploading}
+              className={`py-2 rounded font-bold text-white transition mt-4 ${
                 isEditing ? "bg-accent text-primary" : "bg-primary"
-              }`}
+              } disabled:bg-gray-400`}
             >
               {isEditing ? "Update Book" : "Publish Book"}
             </button>
           </form>
         </div>
 
-        {/* --- LIST SECTION --- */}
+        {/* --- LIST SECTION (Right Side) --- */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-100">
           <h2 className="text-xl font-bold mb-4">Inventory ({books.length})</h2>
           <div className="overflow-auto max-h-[600px]">
