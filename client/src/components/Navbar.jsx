@@ -48,8 +48,8 @@ const Navbar = () => {
         </div>
 
         {/* 3. LINKS (Hidden on mobile) */}
-        <div className="hidden md:flex items-center gap-4 shrink">
-          <Link to="/" className="hover:text-accent transition-colors">
+        <div className=" md:flex items-center gap-4 shrink">
+          <Link to="/" className="hidden hover:text-accent transition-colors">
             Home
           </Link>
           <Link
