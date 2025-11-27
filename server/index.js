@@ -26,7 +26,7 @@ mongoose
 // Update CORS Configuration
 app.use(
   cors({
-    origin: ["https://maktabat-al-noor-pk.vercel.app", "http://localhost:5173"],
+    origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
