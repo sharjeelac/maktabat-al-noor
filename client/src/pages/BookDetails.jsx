@@ -12,7 +12,7 @@ const BookDetails = () => {
   // New State: To handle which image is currently showing big
   const [activeImage, setActiveImage] = useState("");
 
-  const ADMIN_PHONE_NUMBER = "923001234567"; // <--- Update this
+  const ADMIN_PHONE_NUMBER = "923005902238"; // <--- Update this
 
   useEffect(() => {
     const fetchBook = async () => {
