@@ -8,9 +8,9 @@ dotenv.config();
 const router = express.Router();
 
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: "dyafmh1ht",
+  api_key: "493667498826181",
+  api_secret: "a3a69m_QIGE6XfigphYw1DSpjJI",
 });
 
 const storage = new CloudinaryStorage({
