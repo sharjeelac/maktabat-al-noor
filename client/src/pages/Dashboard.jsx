@@ -17,8 +17,12 @@ const Dashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [currentId, setCurrentId] = useState(null);
 
-  // State for Uploading Spinner
-  const [uploading, setUploading] = useState(false);
+  // States for Loading
+  const [uploading, setUploading] = useState(false); // Image upload ke liye
+  const [createLoading, setCreateLoading] = useState(false); // Publish button ke liye
+
+  // State for Gallery Input
+  const [tempGalleryUrl, setTempGalleryUrl] = useState("");
 
   const [formData, setFormData] = useState({
     title: "",
@@ -47,22 +51,19 @@ const Dashboard = () => {
     }
   };
 
-  // --- 1. NEW: HANDLE FILE UPLOAD ---
+  // --- 1. HANDLE FILE UPLOAD ---
   const uploadFileHandler = async (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
 
     const data = new FormData();
-    data.append("image", file); // 'image' must match backend middleware
-
-    setUploading(true); // Start spinner
+    data.append("image", file);
+    setUploading(true);
 
     try {
       const res = await axios.post(`${baseUrl}/api/upload`, data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-
-      // Backend returns: { url: "https://cloudinary..." }
       const imageUrl = res.data.url;
 
       if (type === "thumbnail") {
@@ -70,8 +71,7 @@ const Dashboard = () => {
       } else if (type === "gallery") {
         setFormData({ ...formData, gallery: [...formData.gallery, imageUrl] });
       }
-
-      setUploading(false); // Stop spinner
+      setUploading(false);
     } catch (error) {
       console.error(error);
       setUploading(false);
@@ -79,7 +79,17 @@ const Dashboard = () => {
     }
   };
 
-  // --- REMOVE GALLERY IMAGE ---
+  const handleAddGalleryImage = (e) => {
+    e.preventDefault();
+    if (tempGalleryUrl.trim()) {
+      setFormData({
+        ...formData,
+        gallery: [...formData.gallery, tempGalleryUrl],
+      });
+      setTempGalleryUrl("");
+    }
+  };
+
   const handleRemoveGalleryImage = (indexToRemove) => {
     const updatedGallery = formData.gallery.filter(
       (_, index) => index !== indexToRemove
@@ -87,11 +97,19 @@ const Dashboard = () => {
     setFormData({ ...formData, gallery: updatedGallery });
   };
 
-  // --- EDIT & DELETE HANDLERS (Same as before) ---
   const handleEditClick = (book) => {
     setIsEditing(true);
     setCurrentId(book._id);
-    setFormData({ ...book, gallery: book.gallery || [] });
+    setFormData({
+      title: book.title,
+      author: book.author,
+      description: book.description,
+      price: book.price,
+      category: book.category,
+      condition: book.condition,
+      thumbnail: book.thumbnail,
+      gallery: book.gallery || [],
+    });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -108,12 +126,16 @@ const Dashboard = () => {
       thumbnail: "",
       gallery: [],
     });
+    setTempGalleryUrl("");
   };
 
+  // --- 2. HANDLE SUBMIT (With Loader) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
     const headers = { token: `Bearer ${token}` };
+
+    setCreateLoading(true); // Start Loader
 
     try {
       if (isEditing) {
@@ -129,7 +151,10 @@ const Dashboard = () => {
       fetchBooks();
       handleCancelEdit();
     } catch (err) {
+      console.error(err);
       alert("Operation failed");
+    } finally {
+      setCreateLoading(false); // Stop Loader (Success or Fail)
     }
   };
 
@@ -145,6 +170,9 @@ const Dashboard = () => {
       alert("Failed to delete");
     }
   };
+
+  // Combine loading states
+  const isLoading = uploading || createLoading;
 
   return (
     <div className="container mx-auto p-6">
@@ -249,13 +277,11 @@ const Dashboard = () => {
               }
             />
 
-            {/* --- NEW: THUMBNAIL UPLOAD --- */}
+            {/* --- THUMBNAIL UPLOAD --- */}
             <div className="border-t pt-2 mt-2">
               <label className="text-xs font-bold text-gray-500 uppercase">
                 Main Thumbnail
               </label>
-
-              {/* File Input */}
               <div className="flex items-center gap-2 mt-1">
                 <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded flex items-center gap-2 text-sm text-gray-700 w-full justify-center border border-dashed border-gray-400">
                   {uploading ? (
@@ -268,11 +294,10 @@ const Dashboard = () => {
                     type="file"
                     className="hidden"
                     onChange={(e) => uploadFileHandler(e, "thumbnail")}
+                    disabled={isLoading}
                   />
                 </label>
               </div>
-
-              {/* Preview Thumbnail */}
               {formData.thumbnail && (
                 <div className="mt-2 w-full h-40 bg-gray-100 rounded overflow-hidden border relative">
                   <img
@@ -291,13 +316,12 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* --- NEW: GALLERY UPLOAD --- */}
+            {/* --- GALLERY UPLOAD --- */}
             <div className="border-t pt-2 mt-2">
               <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
                 <ImageIcon size={14} /> Gallery Images (
                 {formData.gallery.length})
               </label>
-
               <div className="mt-1">
                 <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded flex items-center gap-2 text-sm text-gray-700 w-full justify-center border border-dashed border-gray-400">
                   {uploading ? (
@@ -310,11 +334,29 @@ const Dashboard = () => {
                     type="file"
                     className="hidden"
                     onChange={(e) => uploadFileHandler(e, "gallery")}
+                    disabled={isLoading}
                   />
                 </label>
               </div>
+              {/* Manual URL Input (Optional backup) */}
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  placeholder="Or paste URL"
+                  className="border p-1 text-sm rounded w-full"
+                  value={tempGalleryUrl}
+                  onChange={(e) => setTempGalleryUrl(e.target.value)}
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddGalleryImage}
+                  className="bg-gray-200 p-1 rounded"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
 
-              {/* Preview Gallery */}
               {formData.gallery.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {formData.gallery.map((url, index) => (
@@ -340,18 +382,31 @@ const Dashboard = () => {
               )}
             </div>
 
+            {/* --- 3. FIXED BUTTON --- */}
             <button
-              disabled={uploading}
-              className={`py-2 rounded font-bold text-white transition mt-4 ${
-                isEditing ? "bg-accent text-primary" : "bg-primary"
-              } disabled:bg-gray-400`}
+              disabled={isLoading}
+              className={`w-full py-3 rounded-lg font-bold border hover:text-white transition-all mt-4 flex items-center justify-center gap-2 shadow-md
+                ${isLoading ? "bg-gray-400 cursor-not-allowed" : ""}
+                ${
+                  !isLoading && isEditing
+                    ? "bg-accent text-primary hover:bg-yellow-500"
+                    : ""
+                }
+                ${!isLoading && !isEditing ? "bg-primary hover:bg-black" : ""} 
+              `}
             >
-              {isEditing ? "Update Book" : "Publish Book"}
+              {isLoading ? (
+                <>
+                  <Loader2 className="animate-spin w-5 h-5" /> Processing...
+                </>
+              ) : (
+                <>{isEditing ? "Update Book" : "Publish Book"}</>
+              )}
             </button>
           </form>
         </div>
 
-        {/* --- LIST SECTION (Right Side) --- */}
+        {/* --- LIST SECTION --- */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-md border border-gray-100">
           <h2 className="text-xl font-bold mb-4">Inventory ({books.length})</h2>
           <div className="overflow-auto max-h-[600px]">
